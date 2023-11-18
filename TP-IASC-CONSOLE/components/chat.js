@@ -2,6 +2,7 @@ import { menu } from "./menu.js";
 import cluster from "cluster";
 import * as Http from "../utils/utils.js";
 
+const SERVER = "http://localhost:5000";
 const espaciado = "\t\t\t\t\t\t\t";
 const lastMessage = {};
 const numeroTelefono = "54 9 11 3679-2353";
@@ -39,6 +40,7 @@ export async function chat(chatID) {
   });
 }
 
+// Si el mensaje que se envía por la consola del chat inicia con alguno de estos comandos iniciales se procesará según el tipo de comando
 async function lecturaConsola(data, envioDeMensajes, receptorDeMensajes) {
   let message = data.message.match(/^\/\S+\s*/g);
 
@@ -92,25 +94,6 @@ async function lecturaConsola(data, envioDeMensajes, receptorDeMensajes) {
 
       break;
 
-    case "/secure":
-      const parametros = data.message
-        .slice("/secure".length)
-        .trim()
-        .match(/^\d+\s|[\d -]+/g);
-      if (parametros.length == 2) {
-        const tiempo = parametros[0];
-        const numero = parametros[1];
-
-        /*
-         *
-         * TODO
-         *
-         */
-      } else {
-        console.log(`${espaciado}---PARAMETROS INVALIDOS---`);
-      }
-      break;
-
     case "/delete":
       var messageID = data.message.slice("/delete".length).trim();
       if (messageID && !isNaN(messageID)) {
@@ -146,6 +129,27 @@ async function lecturaConsola(data, envioDeMensajes, receptorDeMensajes) {
         mensaje = `${espaciado}---COMANDO INVÁLIDO, AGREGAR ID DE MENSAJE---`;
       }
       console.log(mensaje);
+      break;
+
+    case "/secure":
+      const parametros = data.message.slice("/secure".length).trim();
+
+      let timeToLive = parametros.match(/^\d+\s/g);
+
+      if (timeToLive && timeToLive.length > 0) {
+        timeToLive = timeToLive[0];
+        const mensaje = parametros.slice(timeToLive);
+        timeToLive = timeToLive.trim();
+
+        const response = await enviarMensajeSeguro(mensaje, timeToLive);
+        if (response) {
+          imprimirMensajePropio(response);
+        } else {
+          console.log(`${espaciado}---EL MENSAJE NO PUDO SER ENVIADO---`);
+        }
+      } else {
+        console.log(`${espaciado}---PARAMETROS INVALIDOS---`);
+      }
       break;
 
     default:
@@ -252,7 +256,7 @@ function esGrupo(to) {
 }
 
 async function cargarChatsViejos(chatID) {
-  const url = `http://localhost:5000/chat?from=${numeroTelefono}&to=${chatID}`; //54 9 11 6947-5274
+  const url = `${SERVER}/chat?from=${numeroTelefono}&to=${chatID}`; //54 9 11 6947-5274
   const response = await Http.get(url);
   const responseBody = await response.json();
 
@@ -264,7 +268,7 @@ async function cargarChatsViejos(chatID) {
 }
 
 async function enviarMensaje(messageInfo) {
-  const url = `http://localhost:5000/mensaje`;
+  const url = `${SERVER}/mensaje`;
 
   const data = {
     from: numeroTelefono,
@@ -278,8 +282,24 @@ async function enviarMensaje(messageInfo) {
   return undefined;
 }
 
+async function enviarMensajeSeguro(messageInfo, timeToLive) {
+  const url = `${SERVER}/mensaje/secure`;
+
+  const data = {
+    from: numeroTelefono,
+    to: messageInfo.to,
+    message: messageInfo.message,
+    timeToLive: timeToLive,
+  };
+  const response = await Http.post(url, data);
+  if (response.status === 200) {
+    return await response.json();
+  }
+  return undefined;
+}
+
 async function eliminarMensaje(messageID, chatID) {
-  const url = `http://localhost:5000/mensaje?from=${numeroTelefono}&to=${messageID}&idx=${chatID}`;
+  const url = `${SERVER}/mensaje?from=${numeroTelefono}&to=${messageID}&idx=${chatID}`;
 
   const response = await Http.del(url);
   if (response.status === 200) {
@@ -288,8 +308,24 @@ async function eliminarMensaje(messageID, chatID) {
   return undefined;
 }
 
+async function editarMensaje(messageInfo, timeToLive) {
+  const url = `${SERVER}/mensaje`;
+
+  const data = {
+    from: numeroTelefono,
+    to: messageInfo.to,
+    message: messageInfo.message,
+    timeToLive: timeToLive,
+  };
+  const response = await Http.put(url, data);
+  if (response.status === 200) {
+    return await response.json();
+  }
+  return undefined;
+}
+
 async function agregarUsuarioAlGrupo(userNumber, groupID) {
-  const url = `http://localhost:5000/agregarIntegrante`; //54 9 11 6947-5274
+  const url = `${SERVER}/agregarIntegrante`; //54 9 11 6947-5274
 
   const data = {
     from: numeroTelefono,
@@ -304,7 +340,7 @@ async function agregarUsuarioAlGrupo(userNumber, groupID) {
 }
 
 async function eliminarUsuarioDeGrupo(userNumber, groupID) {
-  const url = `http://localhost:5000/agregarIntegrante?from=${numeroTelefono}&to=${groupID}&integrante=${userNumber}`;
+  const url = `${SERVER}/agregarIntegrante?from=${numeroTelefono}&to=${groupID}&integrante=${userNumber}`;
 
   const response = await Http.del(url);
   if (response.status === 200) {
@@ -314,7 +350,7 @@ async function eliminarUsuarioDeGrupo(userNumber, groupID) {
 }
 
 async function ascenderAdmin(userNumber, groupID) {
-  const url = `http://localhost:5000/agregarIntegrante`; //54 9 11 6947-5274
+  const url = `${SERVER}/agregarIntegrante`; //54 9 11 6947-5274
 
   const data = {
     from: numeroTelefono,

@@ -187,6 +187,38 @@ app.put("/mensaje", (req, res) => {
   }
 });
 
+//POST MENSAJE SEGURO
+app.post("/mensaje/secure", (req, res) => {
+  const from = req.body.from;
+  const to = req.body.to;
+  const timeToLive = req.body.timeToLive;
+
+  const key = keyChatPrivado(from, to);
+  const conversacion = myCache.get(key);
+
+  /* TODO: PENSAR LOGICA PARA EL TIEMPO DE VIDA DE LOS MENSAJES SEGUROS
+   * Opciones:
+   *   - crear eventos que se encargue de eliminarlos
+   *   - simplemente no enviarlos si el tiempo es mayor al tiempo actual
+   */
+  const tiempoCreacion = Date.now();
+
+  const message = {
+    idx: conversacion.chat.length,
+    timeStamp: tiempoCreacion,
+    expiry: tiempoCreacion + timeToLive * 1000,
+    from: from,
+    message: req.body.message,
+  };
+
+  conversacion.chat.push(message);
+  myCache.set(key, conversacion);
+  console.log(key);
+  console.log(conversacion);
+  res.status(200);
+  res.json(message);
+});
+
 /*
  *********** USUARIO ***********/
 
