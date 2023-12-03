@@ -16,6 +16,10 @@ app.use(express.json());
 const port = process.argv[2];
 var STATUS = process.argv[3];
 
+// Para cuando esté en docker
+//const port = process.env.PORT || 3000;
+//var STATUS = process.env.STATUS_INICIAL || 'SLAVE';
+
 const dani = {
   grupos: ["g0", "g1", "g2"],
 };
