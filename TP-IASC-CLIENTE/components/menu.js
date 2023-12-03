@@ -9,7 +9,7 @@ const longitudGrupos = grupos.length;
 const longitudMaxima =
   longitudContactos > longitudGrupos ? longitudContactos : longitudGrupos;
 
-export function menu() {
+export function menu(numeroTelefono) {
   process.stdout.write("\x1bc");
   console.log(
     "Escribí el código del contacto o grupo con quien desees hablar:"
@@ -35,5 +35,5 @@ export function menu() {
   console.log("\n");
   const chatID = prompt(">");
   console.log(chatID);
-  chat(chatID);
+  chat(chatID, numeroTelefono);
 }

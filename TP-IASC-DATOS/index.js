@@ -10,11 +10,16 @@ const http = httpServer(app);
 
 //var io = require("socket.io")(http);
 import { Server as socketServer } from "socket.io";
-const io = new socketServer(http);
+const ioServer = new socketServer(http);
+
+import ioClient from "socket.io-client";
 
 app.use(express.json());
 const port = process.argv[2];
-var STATUS = process.argv[3];
+var PUERTO_ORQUESTADOR = process.argv[3];
+
+const MY_URL = "http://localhost:" + port;
+var DATOS_SLAVES = [];
 
 // Para cuando esté en docker
 //const port = process.env.PORT || 3000;
@@ -366,21 +371,6 @@ app.put("/convertirAdmin", (req, res) => {
   }
 });
 
-/*
- ****************************
- *  SOCKET.IO - HEARTBEATS  *
- ****************************
- */
-
-if (STATUS == "--master") {
-  enviarHeartbeats();
-}
-
-app.post("/convertirEnMaster", async (req, res) => {
-  await enviarHeartbeats();
-  res.sendStatus(200);
-});
-
 http.listen(port, () => {
   console.log(`process ${process.pid} is listening on port ${port}`);
 });
@@ -397,17 +387,83 @@ function keyChatPrivado(from, to) {
   }
 }
 
-async function enviarHeartbeats() {
-  await io.on("connection", (socket) => {
+/*
+ ****************************
+ *  SOCKET.IO - HEARTBEATS  *
+ ****************************
+ */
+
+configurarOrquestador(PUERTO_ORQUESTADOR);
+
+function configurarOrquestador(puertoOrquestador) {
+  recepcionHeartbeat("http://localhost:" + puertoOrquestador);
+}
+
+function recepcionHeartbeat(urlOrquestador) {
+  const socket = ioClient.connect(urlOrquestador, {
+    query: {
+      type: "HII-DATOS",
+      url: MY_URL,
+    },
+  });
+
+  socket.on("connect", () => {
+    const engine = socket.io.engine;
+    engine.on("packet", ({ type, data }) => {
+      if (type == "ping") {
+        console.log("Heartbeat");
+      }
+    });
+
+    console.log(
+      "ORQUESTADOR CONECTADO CON LA APLICACION MASTER. Socket ID: " + socket.id
+    ); // x8WIv7-mJelg7on_ALbx
+  });
+
+  socket.on("ASIGNADO-MASTER", (data) => {
+    console.log("ASIGNADO: MASTER");
+    console.log("Listado de slaves: ");
+    console.log(data);
+    DATOS_SLAVES = data;
+    //enviarHeartbeats();
+  });
+
+  socket.on("ASIGNADO-SLAVE", (data) => {
+    console.log("ASIGNADO: SLAVE");
+  });
+
+  socket.on("NUEVO-SLAVE", (data) => {
+    DATOS_SLAVES.push(data);
+    console.log("Se agregó el SLAVE: " + data + " Slaves actuales: ");
+    console.log(DATOS_SLAVES);
+  });
+
+  socket.on("SLAVE-CAIDO", (data) => {
+    DATOS_SLAVES = DATOS_SLAVES.filter((slave) => slave !== data);
+
+    console.log("Se cayó el SLAVE: " + data + " Slaves actuales: ");
+    console.log(DATOS_SLAVES);
+  });
+
+  socket.on("disconnect", async () => {
+    console.log("ORQUESTADOR Desconectado");
+    // Decidir quien va a ser el nuevo master
+  });
+}
+
+/*
+ *
+ * Por ahora no queremos que el datos master envie heartbeats a los slaves. 
+ * Todo este funcionamiento está concentrado en el orquestador
+ *
+ *
+function enviarHeartbeats() {
+  ioServer.on("connection", (socket) => {
     console.log("Conexion recibida. From: " + socket.handshake.query["from"]);
-    /*
-    Codigo para cuando se conecta un cliente
-    */
+    
 
     socket.on("disconnect", function (reason) {
-      /*
-      Codigo para cuando se desconecta un cliente
-      */
+      
       console.log("Orquestador down");
       console.log(reason);
     });
@@ -419,3 +475,4 @@ async function enviarHeartbeats() {
     });
   });
 }
+*/

@@ -1,11 +1,11 @@
 import { masterNode } from "./component/orquestador.js";
 
-var hosts = ["http://localhost:5000", "http://localhost:5010"];
+//var hosts = ["http://localhost:5000", "http://localhost:5010"];
 
 const port = process.argv[2];
 
 if (validPort(port)) {
-  masterNode(port, hosts);
+  masterNode(port);
 } else {
   console.log("Parametros no válidos");
 }

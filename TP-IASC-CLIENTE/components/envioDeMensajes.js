@@ -1,8 +1,10 @@
 import promptSync from "prompt-sync";
 const prompt = promptSync({ sigint: true, output: process.stderr });
 const to = process.env.CONTACT;
+var numeroTelefono;
 
-export function envioDeMensajes() {
+export function envioDeMensajes(numero) {
+  numeroTelefono = numero;
   while (1) {
     //Ingresamos texto por consola
     const message = prompt(">");
@@ -21,7 +23,7 @@ export function envioDeMensajes() {
 
 function enviarMensaje(mensaje) {
   const data = {
-    from: "Tú",
+    from: numeroTelefono,
     to: to,
     message: mensaje,
   };

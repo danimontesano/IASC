@@ -2,12 +2,13 @@ import { menu } from "./menu.js";
 import cluster from "cluster";
 import * as HttpUtils from "../utils/utils.js";
 
-const SERVER = "http://localhost:5000";
+const SERVER = "http://localhost:5100";
 const espaciado = "\t\t\t\t\t\t\t";
 const lastMessage = {};
-const numeroTelefono = "54 9 11 3679-2353";
+var numeroTelefono;
 
-export async function chat(chatID) {
+export async function chat(chatID, numero) {
+  numeroTelefono = numero;
   process.stdout.write("\x1bc");
   await cargarChatsViejos(chatID);
 
@@ -50,7 +51,7 @@ async function lecturaConsola(data, envioDeMensajes, receptorDeMensajes) {
     case "/exit":
       //envioDeMensajes.kill();
       receptorDeMensajes.kill();
-      menu();
+      menu(numeroTelefono);
       break;
 
     case "/add":
@@ -164,7 +165,7 @@ async function lecturaConsola(data, envioDeMensajes, receptorDeMensajes) {
 
 function imprimirMensajePropio(data) {
   const message = data.message;
-  const from = "Tú";
+  const from = numeroTelefono;
 
   const messagesLines = (message.match(/.{1,54}$|.{1,54} +/g) || []).map((s) =>
     s.trim()
