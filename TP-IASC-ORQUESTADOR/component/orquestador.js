@@ -75,7 +75,8 @@ export async function masterNode(port) {
         const integrantesDelGrupo = await response.json();
         
         for( const integrante of  integrantesDelGrupo){
-          if (REGISTRY[integrante.numero] && from != integrante.numero) HttpUtils.post(REGISTRY[integrante.numero], body);
+          if (REGISTRY[integrante.numero] && from != integrante.numero) 
+          HttpUtils.post(REGISTRY[integrante.numero], body);
         }
 
       } else if (to) {

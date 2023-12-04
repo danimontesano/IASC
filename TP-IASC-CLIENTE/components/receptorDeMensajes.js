@@ -4,7 +4,7 @@ app.use(express.json());
 
 export async function receptorDeMensajes(port) {
   app.listen(port, () => {
-    //console.log(`worker process ${process.pid} is listening on port ${port}`);
+    // console.log(`worker process ${process.pid} is listening on port ${port}`);
   });
 
   app.post("/", (req, res) => {

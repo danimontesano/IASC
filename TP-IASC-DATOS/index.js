@@ -184,6 +184,9 @@ app.get("/chat", (req, res) => {
   if (!conversacion) {
     res.status(404);
     res.json(null);
+  } else if (esGrupo(to) &&  !conversacion.integrantes.find((x) => x.numero == from )) {
+    res.status(401);
+    res.json(null);
   } else {
     console.log(key);
     console.log(conversacion);
@@ -324,7 +327,7 @@ app.get("/integrantesDelGrupo", (req, res) => {
 app.post("/agregarIntegrante", (req, res) => {
   const from = req.body.from;
   const to = req.body.to;
-  const nroIntegrante = req.body.integrante;
+  const nroIntegrante = req.body.nroIntegrante;
 
   const key = keyChatPrivado(from, to);
   const conversacion = myCache.get(key);
@@ -338,6 +341,13 @@ app.post("/agregarIntegrante", (req, res) => {
     const usuarioYaExistente = conversacion.integrantes.find((i) =>
       i.numero == nroIntegrante ? true : false
     );
+
+
+    if(!usuarioSolicitante?.admin){
+      console.log(`Usuario ${nroIntegrante} no agregado al grupo ${to}. Motivo: El usuario ${from} no es admin`);
+    }else if(usuarioYaExistente){
+      console.log(`Usuario ${nroIntegrante} no agregado. Motivo: Usuario ${nroIntegrante} ya pertenece al grupo ${to}`);
+    }
 
     habilitado =
       usuarioSolicitante?.admin && !usuarioYaExistente ? true : false;
@@ -372,7 +382,7 @@ app.delete("/eliminarIntegrante", (req, res) => {
 
   const key = keyChatPrivado(from, to);
   const conversacion = myCache.get(key);
-  const habilitado = false;
+  let habilitado = false;
 
   let usuarioEnGrupoIdx = -1;
 
@@ -602,3 +612,13 @@ function enviarHeartbeats() {
   });
 }
 */
+
+
+
+function esGrupo(to) {
+  if (to) {
+    return to.charAt(0) == "g";
+  } else {
+    return false;
+  }
+}

@@ -67,7 +67,7 @@ async function lecturaConsola(data, envioDeMensajes, receptorDeMensajes) {
         const response = await agregarUsuarioAlGrupo(userNumber, data.to);
         const mensaje = response
           ? `${espaciado}Usuario ${userNumber} agregado correctamente`
-          : `${espaciado}---Usuario, grupo o permisos inválidos---`;
+          : `${espaciado}---Usuario o permisos inválidos---`;
         console.log(mensaje);
       } else {
         console.log(`${espaciado}---COMANDO SOLO VÁLIDO PARA GRUPOS---`);
@@ -295,6 +295,12 @@ async function cargarChatsViejos(chatID) {
   var url = `${ORQUESTADOR_URL}/chat?from=${numeroTelefono}&to=${chatID}`; //54 9 11 6947-5274
   var response = await HttpUtils.get(url);
 
+  if(response.status == 401) {
+    console.log(`${espaciado}---NO PERTENECES AL GRUPO ${chatID} ---`);
+    await new Promise(r => setTimeout(r, 3000));
+    menu(numeroTelefono);
+  }
+  
   if (response.status == 404) {
     url = `${ORQUESTADOR_URL}/chatNuevo`;
     const requestBody = {
@@ -385,7 +391,7 @@ async function agregarUsuarioAlGrupo(userNumber, groupID) {
 }
 
 async function eliminarUsuarioDeGrupo(userNumber, groupID) {
-  const url = `${ORQUESTADOR_URL}/agregarIntegrante?from=${numeroTelefono}&to=${groupID}&integrante=${userNumber}`;
+  const url = `${ORQUESTADOR_URL}/eliminarIntegrante?from=${numeroTelefono}&to=${groupID}&integrante=${userNumber}`;
 
   const response = await HttpUtils.del(url);
   if (response.status === 200) {
