@@ -23,8 +23,14 @@ export async function chat(chatID, numero) {
   envioDeMensajes.on("message", (jsonData) =>
     lecturaConsola(jsonData, envioDeMensajes, receptorDeMensajes)
   );
-  receptorDeMensajes.on("message", (jsonData) =>
-    imprimirMensajeAjeno(jsonData)
+  receptorDeMensajes.on("message", (jsonData) => {
+    if(jsonData.to === chatID){
+      imprimirMensajeAjeno(jsonData)
+    } else {
+      imprimirNotificacion(jsonData)
+    }
+    
+  }
   );
 
   /*
@@ -229,6 +235,14 @@ function imprimirMensajePropio(data) {
   }
 }
 
+function imprimirNotificacion(data) {
+  if(esGrupo(data.to)){
+    console.log(`${espaciado}---RECIBISTE UNA NOTIFICACION EN EL GRUPO ${data.to} ---`);
+  }else{
+    console.log(`${espaciado}---RECIBISTE UNA NOTIFICACION DE ${data.from} ---`);
+  }
+}
+
 function imprimirMensajeAjeno(data) {
   const message = data.message;
   const from = data.from;
@@ -269,8 +283,13 @@ function imprimirMensajeAjeno(data) {
 }
 
 function esGrupo(to) {
-  return to.charAt(0) == "g";
+  if (to) {
+    return to.charAt(0) == "g";
+  } else {
+    return false;
+  }
 }
+
 
 async function cargarChatsViejos(chatID) {
   var url = `${ORQUESTADOR_URL}/chat?from=${numeroTelefono}&to=${chatID}`; //54 9 11 6947-5274

@@ -316,9 +316,6 @@ app.get("/integrantesDelGrupo", (req, res) => {
   const dataDelGrupo = myCache.get(grupo);
   const integrantesDelGrupo = dataDelGrupo.integrantes;
 
-  console.log("Los integrantes del grupos" + grupo );
-  console.log(integrantesDelGrupo);
-  
   res.status(200);
   res.json(integrantesDelGrupo);
 });

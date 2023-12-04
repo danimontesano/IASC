@@ -62,25 +62,26 @@ export async function masterNode(port) {
 
     console.log(body);
     //Enviar notificaciones
+
     if (body?.enviarNotificacion) {
-      const to = req?.body?.to;
+      const to = req?.body?.to; // puede ser un nroTelefono o un grupo
       const from = req?.body?.from;
+
+      body.to = to;
+
       if (esGrupo(to)) {
         //TODO para ir a buscar los integrantes del grupo, hacer de forma asincronica
         const response = await HttpUtils.get(DATOS_MASTER.url +  `/integrantesDelGrupo?grupo=${to}`);
         const integrantesDelGrupo = await response.json();
         
-        console.log("Los integrantes del grupo " + to);
-        console.log(integrantesDelGrupo);
-
         for( const integrante of  integrantesDelGrupo){
           if (REGISTRY[integrante.numero] && from != integrante.numero) HttpUtils.post(REGISTRY[integrante.numero], body);
         }
 
       } else if (to) {
-        console.log(body);
         if (REGISTRY[to]) HttpUtils.post(REGISTRY[to], body);
       } else {
+        console.log("Error en Orquestador")
       }
     }
   });
