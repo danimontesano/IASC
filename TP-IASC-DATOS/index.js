@@ -1,7 +1,7 @@
 import NodeCache from "node-cache";
 const myCache = new NodeCache();
 
-import express from "express";
+import express, { response } from "express";
 const app = express(); //usar express.Router() para dividir en archivos
 
 //var http = require("http").Server(app);
@@ -9,10 +9,11 @@ import { Server as httpServer } from "http";
 const http = httpServer(app);
 
 //var io = require("socket.io")(http);
-import { Server as socketServer } from "socket.io";
-const ioServer = new socketServer(http);
+/*import { Server as socketServer } from "socket.io";
+const ioServer = new socketServer(http);*/
 
 import ioClient from "socket.io-client";
+import * as HttpUtils from "./utils/utils.js";
 
 app.use(express.json());
 const port = process.argv[2];
@@ -111,20 +112,25 @@ app.post("/mensaje", (req, res) => {
     timeStamp: Date.now(),
     from: from,
     message: req.body.message,
+    enviarNotificacion: true,
   };
 
   conversacion.chat.push(message);
   myCache.set(key, conversacion);
   console.log(key);
   console.log(conversacion);
+
+  // Replicacion Aqui
+  replicarResultadoOperacion(key, conversacion);
+
   res.status(200);
   res.json(message);
 });
 
-//GET
-app.get("/chat", (req, res) => {
-  const from = req.query.from;
-  const to = req.query.to;
+//POST NUEVO CHAT
+app.post("/chatNuevo", (req, res) => {
+  const from = req.body.from;
+  const to = req.body.to;
 
   const key = keyChatPrivado(from, to);
   let conversacion = myCache.get(key);
@@ -148,8 +154,45 @@ app.get("/chat", (req, res) => {
   }
   console.log(key);
   console.log(conversacion);
+
+  // FILTRADO LOGICO DE CHATS ELIMINADOS
+  const tiempoActual = Date.now(); // Obtener el tiempo actual en milisegundos
+  conversacion.chat = conversacion.chat.filter(
+    (message) => message.expiry > tiempoActual
+  );
+
+  console.log(conversacion);
+
   res.status(200);
   res.json(conversacion.chat);
+});
+
+//GET
+app.get("/chat", (req, res) => {
+  const from = req.query.from;
+  const to = req.query.to;
+
+  const key = keyChatPrivado(from, to);
+  let conversacion = myCache.get(key);
+
+  if (!conversacion) {
+    res.status(404);
+    res.json(null);
+  } else {
+    console.log(key);
+    console.log(conversacion);
+
+    // FILTRADO LOGICO DE CHATS ELIMINADOS
+    const tiempoActual = Date.now(); // Obtener el tiempo actual en milisegundos
+    conversacion.chat = conversacion.chat.filter(
+      (message) => !(message.expiry < tiempoActual)
+    );
+
+    console.log(conversacion);
+
+    res.status(200);
+    res.json(conversacion.chat);
+  }
 });
 
 //DELETE
@@ -161,6 +204,7 @@ app.delete("/mensaje", (req, res) => {
   let habilitado = false;
 
   const key = keyChatPrivado(from, to);
+  console.log(key);
   let conversacion = myCache.get(key);
   const message = conversacion.chat[idx];
 
@@ -177,12 +221,17 @@ app.delete("/mensaje", (req, res) => {
   }
 
   if (habilitado) {
-    conversacion.chat[idx].message = null;
+    conversacion.chat[idx].expiry = Date.now();
     myCache.set(key, conversacion);
 
-    res.sendStatus(200);
+    // Replicacion Aqui
+    replicarResultadoOperacion(key, conversacion);
+
+    res.status(200);
+    res.json(null);
   } else {
-    res.sendStatus(403);
+    res.status(403);
+    res.json(null);
   }
 });
 
@@ -193,8 +242,8 @@ app.put("/mensaje", (req, res) => {
   const idx = req.body.idx;
 
   const key = keyChatPrivado(from, to);
-  let conversacion = myCache.get(key);
-  const message = conversacion.chat[idx];
+  const conversacion = myCache.get(key);
+  var message = conversacion.chat[idx];
 
   if (message.from == from) {
     conversacion.chat[idx].message = req.body.message;
@@ -203,7 +252,8 @@ app.put("/mensaje", (req, res) => {
     res.status(200);
     res.json(conversacion.chat[idx]);
   } else {
-    res.sendStatus(403);
+    res.status(403);
+    res.json(null);
   }
 });
 
@@ -292,7 +342,8 @@ app.post("/agregarIntegrante", (req, res) => {
     res.status(200);
     res.json(integrante);
   } else {
-    res.sendStatus(403);
+    res.status(403);
+    res.json(null);
   }
 });
 
@@ -330,7 +381,8 @@ app.delete("/eliminarIntegrante", (req, res) => {
     res.status(200);
     res.json(integrante);
   } else {
-    res.sendStatus(403);
+    res.status(403);
+    res.json(null);
   }
 });
 
@@ -365,16 +417,48 @@ app.put("/convertirAdmin", (req, res) => {
 
     console.log(key);
     console.log(conversacion);
-    res.sendStatus(200);
+    res.status(200);
+    res.json(null);
   } else {
-    res.sendStatus(403);
+    res.status(403);
+    res.json(null);
   }
+});
+
+/*
+ *********** REPLICACION DE DATOS ***********/
+
+app.post("/cargarMemoriaEntera", (req, res) => {
+  const body = req.body;
+  myCache.flushAll();
+  myCache.mset(body);
+  console.log("------------------Memoria cargada--------------------");
+  console.log(myCache.mget(myCache.keys()));
+
+  res.status(200);
+  res.json(null);
+});
+
+app.post("/replicacionOperacion", (req, res) => {
+  const key = req.body.key;
+  const value = req.body.value;
+  myCache.set(key, value);
+
+  console.log("Dato replicado: ");
+  console.log(myCache.get(key));
+
+  res.status(200);
+  res.json(null);
 });
 
 http.listen(port, () => {
   console.log(`process ${process.pid} is listening on port ${port}`);
 });
-
+/*
+ *****************************
+ *  FUNCIONES DE NODE-CACHE  *
+ *****************************
+ */
 function keyChatPrivado(from, to) {
   if (to.charAt(0) == "g") {
     return to;
@@ -385,6 +469,30 @@ function keyChatPrivado(from, to) {
   } else {
     return to + ":" + from;
   }
+}
+
+function replicarTodaLaMemoriaEn(url) {
+  const data = myCache.mget(myCache.keys());
+
+  console.log("Se envió para replicar la memoria al slave: " + url);
+  console.log(data);
+  HttpUtils.post(url + "/cargarMemoriaEntera", transformObjectToList(data));
+}
+
+function transformObjectToList(obj) {
+  return Object.entries(obj).map(([key, val]) => ({ key, val }));
+}
+
+function replicarResultadoOperacion(key, value) {
+  DATOS_SLAVES.forEach((urlSlave) => {
+    const message = {
+      key: key,
+      value: value,
+    };
+    console.log();
+    console.log("Se envia replicar operacion al slave " + urlSlave);
+    HttpUtils.post(urlSlave + "/replicacionOperacion", message);
+  });
 }
 
 /*
@@ -432,10 +540,11 @@ function recepcionHeartbeat(urlOrquestador) {
     console.log("ASIGNADO: SLAVE");
   });
 
-  socket.on("NUEVO-SLAVE", (data) => {
-    DATOS_SLAVES.push(data);
-    console.log("Se agregó el SLAVE: " + data + " Slaves actuales: ");
+  socket.on("NUEVO-SLAVE", (url) => {
+    DATOS_SLAVES.push(url);
+    console.log("Se agregó el SLAVE: " + url + " Slaves actuales: ");
     console.log(DATOS_SLAVES);
+    replicarTodaLaMemoriaEn(url);
   });
 
   socket.on("SLAVE-CAIDO", (data) => {

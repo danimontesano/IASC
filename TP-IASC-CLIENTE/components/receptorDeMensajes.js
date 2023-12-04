@@ -1,6 +1,6 @@
 import express from "express";
 const app = express(); //Instantiate an express app, the main work horse of this server
-app.use(express.text());
+app.use(express.json());
 
 export async function receptorDeMensajes(port) {
   app.listen(port, () => {
@@ -8,11 +8,7 @@ export async function receptorDeMensajes(port) {
   });
 
   app.post("/", (req, res) => {
-    const data = {
-      from: "Maxi",
-      message: req.body,
-    };
-    process.send(data);
+    process.send(req.body);
     res.sendStatus(200);
   });
 }

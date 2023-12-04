@@ -2,13 +2,14 @@ import { menu } from "./menu.js";
 import cluster from "cluster";
 import * as HttpUtils from "../utils/utils.js";
 
-const SERVER = "http://localhost:5100";
+const ORQUESTADOR_URL = "http://localhost:5100";
 const espaciado = "\t\t\t\t\t\t\t";
-const lastMessage = {};
+const lastMessage = { from: undefined };
 var numeroTelefono;
 
 export async function chat(chatID, numero) {
   numeroTelefono = numero;
+  lastMessage.from = undefined;
   process.stdout.write("\x1bc");
   await cargarChatsViejos(chatID);
 
@@ -108,7 +109,6 @@ async function lecturaConsola(data, envioDeMensajes, receptorDeMensajes) {
           `${espaciado}---COMANDO INVÁLIDO, AGREGAR ID DE MENSAJE---`
         );
       }
-      console.log(mensaje);
       break;
 
     case "/edit":
@@ -119,12 +119,16 @@ async function lecturaConsola(data, envioDeMensajes, receptorDeMensajes) {
 
       var mensaje;
       if (params.length == 2) {
-        var messageID = params[0];
-        var nuevoChat = params[1];
+        var messageIdx = Number(params[0]);
+        var mensajeEditado = params[1];
 
-        const response = await editarMensaje(nuevoChat, messageID, data.to);
+        const response = await editarMensaje(
+          mensajeEditado,
+          messageIdx,
+          data.to
+        );
         mensaje = response
-          ? `${espaciado}Mensaje ${messageID} eliminado correctamente`
+          ? `${espaciado}Mensaje ${messageIdx} actualizado correctamente`
           : `${espaciado}---Usuario, grupo o permisos inválidos---`;
       } else {
         mensaje = `${espaciado}---COMANDO INVÁLIDO, AGREGAR ID DE MENSAJE---`;
@@ -166,6 +170,7 @@ async function lecturaConsola(data, envioDeMensajes, receptorDeMensajes) {
 function imprimirMensajePropio(data) {
   const message = data.message;
   const from = numeroTelefono;
+  const idx = data.idx;
 
   const messagesLines = (message.match(/.{1,54}$|.{1,54} +/g) || []).map((s) =>
     s.trim()
@@ -179,7 +184,9 @@ function imprimirMensajePropio(data) {
     if (messagesLines.length == 1) {
       const mensaje = messagesLines[0];
       const espaciosAdicionales = 54 - mensaje.length;
-      console.log(`${espaciado}${" ".repeat(espaciosAdicionales)}${mensaje}`);
+      console.log(
+        `${espaciado}${" ".repeat(espaciosAdicionales)}${mensaje}\t\t${idx}`
+      );
     } else {
       var longestMessage = 0;
       messagesLines.forEach((m) => {
@@ -187,8 +194,12 @@ function imprimirMensajePropio(data) {
       });
 
       const espaciosAdicionales = 54 - longestMessage;
-      messagesLines.forEach((m) => {
-        console.log(`${espaciado}${" ".repeat(espaciosAdicionales)}${m}`);
+      messagesLines.forEach((m, index) => {
+        console.log(
+          `${espaciado}${" ".repeat(espaciosAdicionales)}${m}${
+            index == 0 ? `\t\t${idx}` : ""
+          }`
+        );
       });
     }
   } else {
@@ -197,7 +208,9 @@ function imprimirMensajePropio(data) {
     if (messagesLines.length == 1) {
       const mensaje = messagesLines[0];
       const espaciosAdicionales = 54 - mensaje.length;
-      console.log(`${espaciado}${" ".repeat(espaciosAdicionales)}${mensaje}`);
+      console.log(
+        `${espaciado}${" ".repeat(espaciosAdicionales)}${mensaje}\t\t${idx}`
+      );
     } else {
       var longestMessage = 0;
       messagesLines.forEach((m) => {
@@ -205,8 +218,12 @@ function imprimirMensajePropio(data) {
       });
 
       const espaciosAdicionales = 54 - longestMessage;
-      messagesLines.forEach((m) => {
-        console.log(`${espaciado}${" ".repeat(espaciosAdicionales)}${m}`);
+      messagesLines.forEach((m, index) => {
+        console.log(
+          `${espaciado}${" ".repeat(espaciosAdicionales)}${m}${
+            index == 0 ? `\t\t${idx}` : ""
+          }`
+        );
       });
     }
   }
@@ -215,7 +232,6 @@ function imprimirMensajePropio(data) {
 function imprimirMensajeAjeno(data) {
   const message = data.message;
   const from = data.from;
-
   const messagesLines = (message.match(/.{1,54}$|.{1,54} +/g) || []).map((s) =>
     s.trim()
   );
@@ -257,8 +273,18 @@ function esGrupo(to) {
 }
 
 async function cargarChatsViejos(chatID) {
-  const url = `${SERVER}/chat?from=${numeroTelefono}&to=${chatID}`; //54 9 11 6947-5274
-  const response = await HttpUtils.get(url);
+  var url = `${ORQUESTADOR_URL}/chat?from=${numeroTelefono}&to=${chatID}`; //54 9 11 6947-5274
+  var response = await HttpUtils.get(url);
+
+  if (response.status == 404) {
+    url = `${ORQUESTADOR_URL}/chatNuevo`;
+    const requestBody = {
+      from: numeroTelefono,
+      to: chatID,
+    };
+    response = await HttpUtils.post(url, requestBody);
+  }
+
   const responseBody = await response.json();
 
   responseBody.forEach((mensaje) => {
@@ -269,7 +295,7 @@ async function cargarChatsViejos(chatID) {
 }
 
 async function enviarMensaje(messageInfo) {
-  const url = `${SERVER}/mensaje`;
+  const url = `${ORQUESTADOR_URL}/mensaje`;
 
   const data = {
     from: numeroTelefono,
@@ -284,7 +310,7 @@ async function enviarMensaje(messageInfo) {
 }
 
 async function enviarMensajeSeguro(messageInfo, timeToLive) {
-  const url = `${SERVER}/mensaje/secure`;
+  const url = `${ORQUESTADOR_URL}/mensaje/secure`;
 
   const data = {
     from: numeroTelefono,
@@ -300,7 +326,7 @@ async function enviarMensajeSeguro(messageInfo, timeToLive) {
 }
 
 async function eliminarMensaje(messageID, chatID) {
-  const url = `${SERVER}/mensaje?from=${numeroTelefono}&to=${messageID}&idx=${chatID}`;
+  const url = `${ORQUESTADOR_URL}/mensaje?from=${numeroTelefono}&to=${chatID}&idx=${messageID}`;
 
   const response = await HttpUtils.del(url);
   if (response.status === 200) {
@@ -309,14 +335,13 @@ async function eliminarMensaje(messageID, chatID) {
   return undefined;
 }
 
-async function editarMensaje(messageInfo, timeToLive) {
-  const url = `${SERVER}/mensaje`;
-
+async function editarMensaje(mensajeEditado, messageIdx, to) {
+  const url = `${ORQUESTADOR_URL}/mensaje`;
   const data = {
     from: numeroTelefono,
-    to: messageInfo.to,
-    message: messageInfo.message,
-    timeToLive: timeToLive,
+    to: to,
+    message: mensajeEditado,
+    idx: messageIdx,
   };
   const response = await HttpUtils.put(url, data);
   if (response.status === 200) {
@@ -326,7 +351,7 @@ async function editarMensaje(messageInfo, timeToLive) {
 }
 
 async function agregarUsuarioAlGrupo(userNumber, groupID) {
-  const url = `${SERVER}/agregarIntegrante`; //54 9 11 6947-5274
+  const url = `${ORQUESTADOR_URL}/agregarIntegrante`; //54 9 11 6947-5274
 
   const data = {
     from: numeroTelefono,
@@ -341,7 +366,7 @@ async function agregarUsuarioAlGrupo(userNumber, groupID) {
 }
 
 async function eliminarUsuarioDeGrupo(userNumber, groupID) {
-  const url = `${SERVER}/agregarIntegrante?from=${numeroTelefono}&to=${groupID}&integrante=${userNumber}`;
+  const url = `${ORQUESTADOR_URL}/agregarIntegrante?from=${numeroTelefono}&to=${groupID}&integrante=${userNumber}`;
 
   const response = await HttpUtils.del(url);
   if (response.status === 200) {
@@ -351,7 +376,7 @@ async function eliminarUsuarioDeGrupo(userNumber, groupID) {
 }
 
 async function ascenderAdmin(userNumber, groupID) {
-  const url = `${SERVER}/agregarIntegrante`; //54 9 11 6947-5274
+  const url = `${ORQUESTADOR_URL}/agregarIntegrante`; //54 9 11 6947-5274
 
   const data = {
     from: numeroTelefono,

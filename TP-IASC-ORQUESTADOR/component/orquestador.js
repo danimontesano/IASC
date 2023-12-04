@@ -10,6 +10,7 @@ const ioServer = new socketServer(http);
 
 app.use(express.json());
 
+const REGISTRY = {};
 var DATOS_MASTER = undefined;
 var DATOS_SLAVES = [];
 
@@ -20,6 +21,19 @@ export async function masterNode(port) {
     console.log(`worker process ${process.pid} is listening on port 5100`);
   });
 
+  app.post("/registrarCliente", (req, res) => {
+    console.log(req.body.url);
+    console.log(req.body.nroTelefono);
+
+    REGISTRY[req.body.nroTelefono] = req.body.url;
+
+    updateRegistry(req.body.nroTelefono, req.body.url);
+
+    res.status(200);
+    res.json(null);
+    console.log(REGISTRY);
+  });
+
   app.get("*", async (req, res) => {
     console.log("original:");
     console.log(req.originalUrl);
@@ -27,10 +41,6 @@ export async function masterNode(port) {
 
     const response = await HttpUtils.get(DATOS_MASTER.url + req.originalUrl);
     const body = await response.json();
-
-    // FILTRADO LOGICO DE CHATS ELIMINADOS
-    const tiempoActual = Date.now(); // Obtener el tiempo actual en milisegundos
-    body.chat = body.chat.filter((message) => message.expiry > tiempoActual);
 
     res.status(response.status);
     res.json(body);
@@ -46,8 +56,22 @@ export async function masterNode(port) {
       req.body
     );
     const body = await response.json();
+
     res.status(response.status);
     res.json(body);
+
+    console.log(body);
+    //Enviar notificaciones
+    if (body?.enviarNotificacion) {
+      const to = req?.body?.to;
+      if (esGrupo(to)) {
+        //TODO para ir a buscar los integrantes del grupo, hacer de forma asincronica
+      } else if (to) {
+        console.log(body);
+        if (REGISTRY[to]) HttpUtils.post(REGISTRY[to], body);
+      } else {
+      }
+    }
   });
 
   app.put("*", async (req, res) => {
@@ -69,10 +93,11 @@ export async function masterNode(port) {
     console.log(req.originalUrl);
     console.log(req.method);
 
-    const response = await HttpUtils.delete(
+    const response = await HttpUtils.del(
       DATOS_MASTER.url + req.originalUrl,
       req.body
     );
+
     const body = await response.json();
     res.status(response.status);
     res.json(body);
@@ -135,6 +160,30 @@ function enviarHeartbeats() {
       }
     });
   });
+}
+
+/**
+ * REGISTRY
+ */
+//Para que sea asincronico se tiene que pasar a una promise
+function updateRegistry(nroTelefono, url) {
+  for (const key in REGISTRY) {
+    if (REGISTRY.hasOwnProperty(key)) {
+      if (REGISTRY[key] == url) {
+        if (key != nroTelefono) {
+          delete REGISTRY[key];
+        }
+      }
+    }
+  }
+}
+
+function esGrupo(to) {
+  if (to) {
+    return to.charAt(0) == "g";
+  } else {
+    return false;
+  }
 }
 
 /*
