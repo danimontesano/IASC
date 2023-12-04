@@ -63,6 +63,12 @@ const grupo1 = {
       entradaGrupo: 1699392877416,
       salidaGrupo: null,
     },
+    {
+      numero: "54 9 11 6947-5273",
+      admin: false,
+      entradaGrupo: 1699392877416,
+      salidaGrupo: null,
+    }
   ],
   chat: [],
 };
@@ -301,6 +307,20 @@ app.get("/usuario", (req, res) => {
   console.log(usuario);
   res.status(200);
   res.json(usuario);
+});
+
+//GET USUARIOS DE LOS GRUPOS
+app.get("/integrantesDelGrupo", (req, res) => {
+  const grupo = req.query.grupo;
+
+  const dataDelGrupo = myCache.get(grupo);
+  const integrantesDelGrupo = dataDelGrupo.integrantes;
+
+  console.log("Los integrantes del grupos" + grupo );
+  console.log(integrantesDelGrupo);
+  
+  res.status(200);
+  res.json(integrantesDelGrupo);
 });
 
 //AGREGAR INTEGRANTE
