@@ -68,7 +68,7 @@ const grupo1 = {
       admin: false,
       entradaGrupo: 1699392877416,
       salidaGrupo: null,
-    }
+    },
   ],
   chat: [],
 };
@@ -169,6 +169,9 @@ app.post("/chatNuevo", (req, res) => {
 
   console.log(conversacion);
 
+  // Replicacion Aqui
+  replicarResultadoOperacion(key, conversacion);
+
   res.status(200);
   res.json(conversacion.chat);
 });
@@ -184,13 +187,13 @@ app.get("/chat", (req, res) => {
   if (!conversacion) {
     res.status(404);
     res.json(null);
-  } else if (esGrupo(to) &&  !conversacion.integrantes.find((x) => x.numero == from )) {
+  } else if (
+    esGrupo(to) &&
+    !conversacion.integrantes.find((x) => x.numero == from)
+  ) {
     res.status(401);
     res.json(null);
   } else {
-    console.log(key);
-    console.log(conversacion);
-
     // FILTRADO LOGICO DE CHATS ELIMINADOS
     const tiempoActual = Date.now(); // Obtener el tiempo actual en milisegundos
     conversacion.chat = conversacion.chat.filter(
@@ -258,6 +261,9 @@ app.put("/mensaje", (req, res) => {
     conversacion.chat[idx].message = req.body.message;
     myCache.set(key, conversacion);
 
+    // Replicacion Aqui
+    replicarResultadoOperacion(key, conversacion);
+
     res.status(200);
     res.json(conversacion.chat[idx]);
   } else {
@@ -294,6 +300,10 @@ app.post("/mensaje/secure", (req, res) => {
   myCache.set(key, conversacion);
   console.log(key);
   console.log(conversacion);
+
+  // Replicacion Aqui
+  replicarResultadoOperacion(key, conversacion);
+
   res.status(200);
   res.json(message);
 });
@@ -342,11 +352,14 @@ app.post("/agregarIntegrante", (req, res) => {
       i.numero == nroIntegrante ? true : false
     );
 
-
-    if(!usuarioSolicitante?.admin){
-      console.log(`Usuario ${nroIntegrante} no agregado al grupo ${to}. Motivo: El usuario ${from} no es admin`);
-    }else if(usuarioYaExistente){
-      console.log(`Usuario ${nroIntegrante} no agregado. Motivo: Usuario ${nroIntegrante} ya pertenece al grupo ${to}`);
+    if (!usuarioSolicitante?.admin) {
+      console.log(
+        `Usuario ${nroIntegrante} no agregado al grupo ${to}. Motivo: El usuario ${from} no es admin`
+      );
+    } else if (usuarioYaExistente) {
+      console.log(
+        `Usuario ${nroIntegrante} no agregado. Motivo: Usuario ${nroIntegrante} ya pertenece al grupo ${to}`
+      );
     }
 
     habilitado =
@@ -366,6 +379,10 @@ app.post("/agregarIntegrante", (req, res) => {
 
     console.log(key);
     console.log(conversacion);
+
+    // Replicacion Aqui
+    replicarResultadoOperacion(key, conversacion);
+
     res.status(200);
     res.json(integrante);
   } else {
@@ -405,6 +422,10 @@ app.delete("/eliminarIntegrante", (req, res) => {
 
     console.log(key);
     console.log(conversacion);
+
+    // Replicacion Aqui
+    replicarResultadoOperacion(key, conversacion);
+
     res.status(200);
     res.json(integrante);
   } else {
@@ -442,8 +463,12 @@ app.put("/convertirAdmin", (req, res) => {
     conversacion.integrantes[usuarioEnGrupoIdx].admin = true;
     myCache.set(key, conversacion);
 
-    console.log("Nuevo estado de los integrantes:")
+    console.log("Nuevo estado de los integrantes:");
     console.log(conversacion.integrantes);
+
+    // Replicacion Aqui
+    replicarResultadoOperacion(key, conversacion);
+
     res.status(200);
     res.json(conversacion.integrantes);
   } else {
@@ -546,13 +571,11 @@ function recepcionHeartbeat(urlOrquestador) {
     const engine = socket.io.engine;
     engine.on("packet", ({ type, data }) => {
       if (type == "ping") {
-        console.log("Heartbeat");
+        //console.log("Heartbeat");
       }
     });
 
-    console.log(
-      "ORQUESTADOR CONECTADO CON LA APLICACION MASTER. Socket ID: " + socket.id
-    ); // x8WIv7-mJelg7on_ALbx
+    console.log("CONECTADO CON EL ORQUESTADOR. Socket ID: " + socket.id); // x8WIv7-mJelg7on_ALbx
   });
 
   socket.on("ASIGNADO-MASTER", (data) => {
@@ -612,8 +635,6 @@ function enviarHeartbeats() {
   });
 }
 */
-
-
 
 function esGrupo(to) {
   if (to) {

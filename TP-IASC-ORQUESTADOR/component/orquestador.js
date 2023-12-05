@@ -6,7 +6,10 @@ import { Server as httpServer } from "http";
 const http = httpServer(app);
 
 import { Server as socketServer } from "socket.io";
-const ioServer = new socketServer(http);
+const ioServer = new socketServer(http, {
+  pingTimeout: 5000,
+  pingInterval: 1000,
+});
 
 app.use(express.json());
 
@@ -39,7 +42,13 @@ export async function masterNode(port) {
     console.log(req.originalUrl);
     console.log(req.method);
 
-    const response = await HttpUtils.get(DATOS_MASTER.url + req.originalUrl);
+    const server = getServerDatosRandom();
+
+    try {
+      const response = await HttpUtils.get(server.url + req.originalUrl);
+    } catch (error) {
+      res.sendStatus(500);
+    }
     const body = await response.json();
 
     res.status(response.status);
@@ -71,31 +80,51 @@ export async function masterNode(port) {
 
       if (esGrupo(to)) {
         //TODO para ir a buscar los integrantes del grupo, hacer de forma asincronica
-        const response = await HttpUtils.get(DATOS_MASTER.url +  `/integrantesDelGrupo?grupo=${to}`);
+        const response = await HttpUtils.get(
+          DATOS_MASTER.url + `/integrantesDelGrupo?grupo=${to}`
+        );
         const integrantesDelGrupo = await response.json();
-        
-        for( const integrante of  integrantesDelGrupo){
 
+        for (const integrante of integrantesDelGrupo) {
           if (REGISTRY[integrante.numero] && from != integrante.numero) {
-            const p = new Promise(async (resolve,reject) => {
+            const p = new Promise(async (resolve, reject) => {
               try {
-                let response = await HttpUtils.post(REGISTRY[integrante.numero], body);
+                let response = await HttpUtils.post(
+                  REGISTRY[integrante.numero],
+                  body
+                );
                 resolve(response);
               } catch (error) {
-                console.log(REGISTRY[integrante.numero] + " no se pudo para enviar la notificacion. (no conectado/no se encuentra en chat)");
+                console.log(
+                  REGISTRY[integrante.numero] +
+                    " no se pudo para enviar la notificacion. (no conectado/no se encuentra en chat)"
+                );
                 reject();
               }
-            })
+            });
 
             p.then((value) => {}).catch(() => {});
           }
-          
         }
-
       } else if (to) {
-        if (REGISTRY[to]) HttpUtils.post(REGISTRY[to], body);
+        if (REGISTRY[to]) {
+          const p = new Promise(async (resolve, reject) => {
+            try {
+              let response = await HttpUtils.post(REGISTRY[to], body);
+              resolve(response);
+            } catch (error) {
+              console.log(
+                REGISTRY[to] +
+                  " no se pudo para enviar la notificacion. (no conectado/no se encuentra en chat)"
+              );
+              reject();
+            }
+          });
+
+          p.then((value) => {}).catch(() => {});
+        }
       } else {
-        console.log("Error en Orquestador")
+        console.log("Error en Orquestador");
       }
     }
   });
@@ -182,7 +211,7 @@ function enviarHeartbeats() {
 
     socket.conn.on("packet", function (packet) {
       if (packet?.type == "pong") {
-        console.log("Envio Heartbeat");
+        //console.log("Envio Heartbeat");
       }
     });
   });
@@ -209,6 +238,18 @@ function esGrupo(to) {
     return to.charAt(0) == "g";
   } else {
     return false;
+  }
+}
+
+function getServerDatosRandom() {
+  const random = Math.trunc(Math.random() * (DATOS_SLAVES.length + 1));
+
+  console.log("El random es: " + random);
+
+  if (random == 0) {
+    return DATOS_MASTER;
+  } else {
+    return DATOS_SLAVES[random - 1];
   }
 }
 
