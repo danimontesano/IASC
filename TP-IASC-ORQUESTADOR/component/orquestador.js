@@ -75,8 +75,21 @@ export async function masterNode(port) {
         const integrantesDelGrupo = await response.json();
         
         for( const integrante of  integrantesDelGrupo){
-          if (REGISTRY[integrante.numero] && from != integrante.numero) 
-          HttpUtils.post(REGISTRY[integrante.numero], body);
+
+          if (REGISTRY[integrante.numero] && from != integrante.numero) {
+            const p = new Promise(async (resolve,reject) => {
+              try {
+                let response = await HttpUtils.post(REGISTRY[integrante.numero], body);
+                resolve(response);
+              } catch (error) {
+                console.log(REGISTRY[integrante.numero] + " no se pudo para enviar la notificacion. (no conectado/no se encuentra en chat)");
+                reject();
+              }
+            })
+
+            p.then((value) => {}).catch(() => {});
+          }
+          
         }
 
       } else if (to) {
