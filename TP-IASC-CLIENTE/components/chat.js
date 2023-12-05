@@ -148,10 +148,10 @@ export async function lecturaConsola(data, envioDeMensajes) {
 
       if (timeToLive && timeToLive.length > 0) {
         timeToLive = timeToLive[0];
-        const mensaje = parametros.slice(timeToLive);
+        data.message = parametros.slice(timeToLive.length).trim();
         timeToLive = timeToLive.trim();
 
-        const response = await enviarMensajeSeguro(mensaje, timeToLive);
+        const response = await enviarMensajeSeguro(data, timeToLive);
         if (response) {
           imprimirMensajePropio(response);
         } else {

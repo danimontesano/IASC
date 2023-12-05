@@ -124,7 +124,6 @@ app.post("/mensaje", (req, res) => {
     timeStamp: Date.now(),
     from: from,
     message: req.body.message,
-    enviarNotificacion: true,
   };
 
   conversacion.chat.push(message);
@@ -137,6 +136,7 @@ app.post("/mensaje", (req, res) => {
   // Replicacion Aqui
   replicarResultadoOperacion(key, conversacion);
 
+  message.enviarNotificacion = true;
   res.status(200);
   res.json(message);
 });
@@ -289,7 +289,7 @@ app.post("/mensaje/secure", (req, res) => {
   const from = req.body.from;
   const to = req.body.to;
   const timeToLive = req.body.timeToLive;
-
+  console.log(to);
   const key = keyChatPrivado(from, to);
   const conversacion = myCache.get(key);
 
@@ -317,6 +317,7 @@ app.post("/mensaje/secure", (req, res) => {
   // Replicacion Aqui
   replicarResultadoOperacion(key, conversacion);
 
+  message.enviarNotificacion = true;
   res.status(200);
   res.json(message);
 });
