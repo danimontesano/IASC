@@ -43,6 +43,7 @@ export function initApp(numeroTelefono) {
 
 export function menu(numeroTelefono) {
   process.stdout.write("\x1bc");
+  chatID = null;
 
   const lecturaMenu = cluster.fork({
     TYPE: "lecturaMenu",

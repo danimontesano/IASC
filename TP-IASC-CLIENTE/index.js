@@ -5,11 +5,17 @@ import { receptorDeMensajes } from "./components/receptorDeMensajes.js";
 import cluster from "cluster";
 import * as HttpUtils from "./utils/utils.js";
 
-const ip = process.argv[2];
-const port = process.argv[3];
-const orquestadorIp = process.argv[4];
-const orquestadorPort = process.argv[5];
-const numeroTelefono = process.argv[6];
+//const ip = process.argv[2];
+//const port = process.argv[3];
+//const orquestadorIp = process.argv[4];
+//const orquestadorPort = process.argv[5];
+//const numeroTelefono = process.argv[6];
+
+const ip = process.env.IP;
+const port = process.env.PUERTO;
+var orquestadorIp = process.env.IP_ORQUESTADOR;
+var orquestadorPort = process.env.PUERTO_ORQUESTADOR;
+const numeroTelefono = process.env.NRO_TEL;
 
 if (cluster.isPrimary) {
   const body = {

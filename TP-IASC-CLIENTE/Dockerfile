@@ -24,9 +24,10 @@ COPY --from=builder /usr/src/app .
 
 # Define environment variables
 ENV IP=192.168.1.6
-ENV PUERTO=5222
+ENV PUERTO=5123
 ENV IP_ORQUESTADOR=192.168.1.6
 ENV PUERTO_ORQUESTADOR=5100
+ENV NRO_TEL=12345
 
 # Expose the port on which your app runs
 EXPOSE $PUERTO

@@ -2,8 +2,12 @@ import { menu } from "./menu.js";
 import cluster from "cluster";
 import * as HttpUtils from "../utils/utils.js";
 
-const orquestadorIp = process.argv[4];
-const orquestadorPort = process.argv[5];
+//const orquestadorIp = process.argv[4];
+//const orquestadorPort = process.argv[5];
+
+var orquestadorIp = process.env.IP_ORQUESTADOR;
+var orquestadorPort = process.env.PUERTO_ORQUESTADOR;
+
 const ORQUESTADOR_URL = "http://" + orquestadorIp + ":" + orquestadorPort;
 const espaciado = "\t\t\t\t\t\t\t";
 const lastMessage = { from: undefined };
