@@ -216,11 +216,15 @@ function enviarHeartbeats() {
     });
 
     socket.on("REPLICACION-FALLIDA", function (url) {
-      slaveFallidoId = DATOS_SLAVES.findIndex((slave) => slave.url == url);
+      const slaveFallidoId = DATOS_SLAVES.findIndex(
+        (slave) => slave.url == url
+      );
       DATOS_SLAVES[slaveFallidoId].socket.disconnect();
-      lista.splice(slaveFallidoId, 1);
+      DATOS_SLAVES.splice(slaveFallidoId, 1);
       console.log(
-        "Slave " + url + "no puede ser detectado por el master. Slaves actuales"
+        "Slave " +
+          url +
+          " no detectado por el master, eliminado de la lista. Slaves actuales: "
       );
       console.log(DATOS_SLAVES.map((slave) => slave.url));
     });
