@@ -16,10 +16,13 @@ import ioClient from "socket.io-client";
 import * as HttpUtils from "./utils/utils.js";
 
 app.use(express.json());
-const port = process.argv[2];
-var PUERTO_ORQUESTADOR = process.argv[3];
 
-const MY_URL = "http://localhost:" + port;
+const ip = process.argv[2];
+const port = process.argv[3];
+var IP_ORQUESTADOR = process.argv[4];
+var PUERTO_ORQUESTADOR = process.argv[5];
+
+const MY_URL = "http://" + ip + ":" + port;
 var DATOS_SLAVES = [];
 
 // Para cuando esté en docker
@@ -581,11 +584,7 @@ function replicarResultadoOperacion(key, value) {
  ****************************
  */
 
-configurarOrquestador(PUERTO_ORQUESTADOR);
-
-function configurarOrquestador(puertoOrquestador) {
-  recepcionHeartbeat("http://localhost:" + puertoOrquestador);
-}
+recepcionHeartbeat("http://" + IP_ORQUESTADOR + ":" + PUERTO_ORQUESTADOR);
 
 function recepcionHeartbeat(urlOrquestador) {
   const socket = ioClient.connect(urlOrquestador, {

@@ -5,16 +5,22 @@ import { receptorDeMensajes } from "./components/receptorDeMensajes.js";
 import cluster from "cluster";
 import * as HttpUtils from "./utils/utils.js";
 
-const port = process.argv[2];
-const numeroTelefono = process.argv[3];
+const ip = process.argv[2];
+const port = process.argv[3];
+const orquestadorIp = process.argv[4];
+const orquestadorPort = process.argv[5];
+const numeroTelefono = process.argv[6];
 
 if (cluster.isPrimary) {
   const body = {
-    url: "http://localhost:" + port,
+    url: "http://" + ip + ":" + port,
     nroTelefono: numeroTelefono,
   };
 
-  await HttpUtils.post("http://localhost:5100/registrarCliente", body);
+  await HttpUtils.post(
+    "http://" + orquestadorIp + ":" + orquestadorPort + "/registrarCliente",
+    body
+  );
 
   initApp(numeroTelefono);
 } else {

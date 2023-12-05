@@ -2,7 +2,9 @@ import { menu } from "./menu.js";
 import cluster from "cluster";
 import * as HttpUtils from "../utils/utils.js";
 
-const ORQUESTADOR_URL = "http://localhost:5100";
+const orquestadorIp = process.argv[4];
+const orquestadorPort = process.argv[5];
+const ORQUESTADOR_URL = "http://" + orquestadorIp + ":" + orquestadorPort;
 const espaciado = "\t\t\t\t\t\t\t";
 const lastMessage = { from: undefined };
 var numeroTelefono;
@@ -283,7 +285,7 @@ export function imprimirMensajeAjeno(data) {
   }
 }
 
-function esGrupo(to) {
+export function esGrupo(to) {
   if (to) {
     return to.charAt(0) == "g";
   } else {

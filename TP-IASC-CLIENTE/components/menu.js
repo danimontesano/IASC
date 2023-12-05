@@ -1,6 +1,11 @@
 //import promptSync from "prompt-sync";
 //const prompt = promptSync({ sigint: true, output: process.stderr });
-import { chat, imprimirMensajeAjeno, imprimirNotificacion } from "./chat.js";
+import {
+  chat,
+  imprimirMensajeAjeno,
+  imprimirNotificacion,
+  esGrupo,
+} from "./chat.js";
 import cluster from "cluster";
 
 let chatID = null;
@@ -18,10 +23,18 @@ export function initApp(numeroTelefono) {
   });
 
   receptorDeMensajes.on("message", (jsonData) => {
-    if (jsonData.to === chatID) {
-      imprimirMensajeAjeno(jsonData);
+    if (esGrupo(jsonData.to)) {
+      if (jsonData.to === chatID) {
+        imprimirMensajeAjeno(jsonData);
+      } else {
+        imprimirNotificacion(jsonData);
+      }
     } else {
-      imprimirNotificacion(jsonData);
+      if (jsonData.from === chatID) {
+        imprimirMensajeAjeno(jsonData);
+      } else {
+        imprimirNotificacion(jsonData);
+      }
     }
   });
 

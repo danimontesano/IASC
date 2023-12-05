@@ -21,7 +21,7 @@ export async function masterNode(port) {
   enviarHeartbeats();
 
   http.listen(port, () => {
-    console.log(`worker process ${process.pid} is listening on port 5100`);
+    console.log(`worker process ${process.pid} is listening on port ${port}`);
   });
 
   app.post("/registrarCliente", (req, res) => {

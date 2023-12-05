@@ -9,7 +9,6 @@ export async function receptorDeMensajes(port) {
   });
 
   app.post("/", (req, res) => {
-    console.log(req.body);
     process.send(req.body);
     res.sendStatus(200);
   });

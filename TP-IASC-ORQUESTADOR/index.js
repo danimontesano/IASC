@@ -1,7 +1,5 @@
 import { masterNode } from "./component/orquestador.js";
 
-//var hosts = ["http://localhost:5000", "http://localhost:5010"];
-
 const port = process.argv[2];
 
 if (validPort(port)) {
