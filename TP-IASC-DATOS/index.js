@@ -560,12 +560,21 @@ function keyChatPrivado(from, to) {
   }
 }
 
-function replicarTodaLaMemoriaEn(url) {
+function replicarTodaLaMemoriaEn(url, socket) {
   const data = myCache.mget(myCache.keys());
 
   console.log("Se envió para replicar la memoria al slave: " + url);
   console.log(data);
-  HttpUtils.post(url + "/cargarMemoriaEntera", transformObjectToList(data));
+
+  HttpUtils.post(url + "/cargarMemoriaEntera", transformObjectToList(data))
+    .then(() => {
+      DATOS_SLAVES.push(url);
+      console.log("Memoria replicada correctamente en el slave: " + url);
+    })
+    .catch(() => {
+      socket.emit("REPLICACION-FALLIDA", url);
+      console.log("Error al replicar en el slave: " + url);
+    });
 }
 
 function transformObjectToList(obj) {
@@ -624,10 +633,9 @@ function recepcionHeartbeat(urlOrquestador) {
   });
 
   socket.on("NUEVO-SLAVE", (url) => {
-    DATOS_SLAVES.push(url);
     console.log("Se agregó el SLAVE: " + url + " Slaves actuales: ");
     console.log(DATOS_SLAVES);
-    replicarTodaLaMemoriaEn(url);
+    replicarTodaLaMemoriaEn(url, socket);
   });
 
   socket.on("SLAVE-CAIDO", (data) => {

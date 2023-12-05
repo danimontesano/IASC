@@ -6,6 +6,7 @@ import { Server as httpServer } from "http";
 const http = httpServer(app);
 
 import { Server as socketServer } from "socket.io";
+import { log } from "console";
 const ioServer = new socketServer(http, {
   pingTimeout: 5000,
   pingInterval: 1000,
@@ -46,13 +47,13 @@ export async function masterNode(port) {
     let response;
     try {
       response = await HttpUtils.get(server.url + req.originalUrl);
+      const body = await response.json();
+
+      res.status(response.status);
+      res.json(body);
     } catch (error) {
       res.sendStatus(500);
     }
-    const body = await response.json();
-
-    res.status(response.status);
-    res.json(body);
   });
 
   app.post("*", async (req, res) => {
@@ -60,43 +61,62 @@ export async function masterNode(port) {
     console.log(req.originalUrl);
     console.log(req.method);
 
-    const response = await HttpUtils.post(
-      DATOS_MASTER.url + req.originalUrl,
-      req.body
-    );
-    const body = await response.json();
+    try {
+      const response = await HttpUtils.post(
+        DATOS_MASTER.url + req.originalUrl,
+        req.body
+      );
+      const body = await response.json();
 
-    res.status(response.status);
-    res.json(body);
+      res.status(response.status);
+      res.json(body);
 
-    console.log(body);
-    //Enviar notificaciones
+      console.log(body);
+      //Enviar notificaciones
 
-    if (body?.enviarNotificacion) {
-      const to = req?.body?.to; // puede ser un nroTelefono o un grupo
-      const from = req?.body?.from;
+      if (body?.enviarNotificacion) {
+        const to = req?.body?.to; // puede ser un nroTelefono o un grupo
+        const from = req?.body?.from;
 
-      body.to = to;
+        body.to = to;
 
-      if (esGrupo(to)) {
-        //TODO para ir a buscar los integrantes del grupo, hacer de forma asincronica
-        const response = await HttpUtils.get(
-          DATOS_MASTER.url + `/integrantesDelGrupo?grupo=${to}`
-        );
-        const integrantesDelGrupo = await response.json();
+        if (esGrupo(to)) {
+          //TODO para ir a buscar los integrantes del grupo, hacer de forma asincronica
+          const response = await HttpUtils.get(
+            DATOS_MASTER.url + `/integrantesDelGrupo?grupo=${to}`
+          );
+          const integrantesDelGrupo = await response.json();
 
-        for (const integrante of integrantesDelGrupo) {
-          if (REGISTRY[integrante.numero] && from != integrante.numero) {
+          for (const integrante of integrantesDelGrupo) {
+            if (REGISTRY[integrante.numero] && from != integrante.numero) {
+              const p = new Promise(async (resolve, reject) => {
+                try {
+                  let response = await HttpUtils.post(
+                    REGISTRY[integrante.numero],
+                    body
+                  );
+                  resolve(response);
+                } catch (error) {
+                  console.log(
+                    REGISTRY[integrante.numero] +
+                      " no se pudo para enviar la notificacion. (no conectado/no se encuentra en chat)"
+                  );
+                  reject();
+                }
+              });
+
+              p.then((value) => {}).catch(() => {});
+            }
+          }
+        } else if (to) {
+          if (REGISTRY[to]) {
             const p = new Promise(async (resolve, reject) => {
               try {
-                let response = await HttpUtils.post(
-                  REGISTRY[integrante.numero],
-                  body
-                );
+                let response = await HttpUtils.post(REGISTRY[to], body);
                 resolve(response);
               } catch (error) {
                 console.log(
-                  REGISTRY[integrante.numero] +
+                  REGISTRY[to] +
                     " no se pudo para enviar la notificacion. (no conectado/no se encuentra en chat)"
                 );
                 reject();
@@ -105,27 +125,13 @@ export async function masterNode(port) {
 
             p.then((value) => {}).catch(() => {});
           }
+        } else {
+          console.log("Error en Orquestador");
         }
-      } else if (to) {
-        if (REGISTRY[to]) {
-          const p = new Promise(async (resolve, reject) => {
-            try {
-              let response = await HttpUtils.post(REGISTRY[to], body);
-              resolve(response);
-            } catch (error) {
-              console.log(
-                REGISTRY[to] +
-                  " no se pudo para enviar la notificacion. (no conectado/no se encuentra en chat)"
-              );
-              reject();
-            }
-          });
-
-          p.then((value) => {}).catch(() => {});
-        }
-      } else {
-        console.log("Error en Orquestador");
       }
+    } catch (error) {
+      console.log("Un error");
+      console.log(error);
     }
   });
 
@@ -207,6 +213,16 @@ function enviarHeartbeats() {
         );
         DATOS_MASTER.socket.emit("SLAVE-CAIDO", url);
       }
+    });
+
+    socket.on("REPLICACION-FALLIDA", function (url) {
+      slaveFallidoId = DATOS_SLAVES.findIndex((slave) => slave.url == url);
+      DATOS_SLAVES[slaveFallidoId].socket.disconnect();
+      lista.splice(slaveFallidoId, 1);
+      console.log(
+        "Slave " + url + "no puede ser detectado por el master. Slaves actuales"
+      );
+      console.log(DATOS_SLAVES.map((slave) => slave.url));
     });
 
     socket.conn.on("packet", function (packet) {
