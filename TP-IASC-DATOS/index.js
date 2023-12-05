@@ -417,11 +417,11 @@ app.delete("/eliminarIntegrante", (req, res) => {
 app.put("/convertirAdmin", (req, res) => {
   const from = req.body.from;
   const to = req.body.to;
-  const nroIntegrante = req.body.integrante;
+  const nroIntegrante = req.body.nroIntegrante;
 
   const key = keyChatPrivado(from, to);
   const conversacion = myCache.get(key);
-  const habilitado = false;
+  let habilitado = false;
 
   let usuarioEnGrupoIdx = -1;
 
@@ -442,10 +442,10 @@ app.put("/convertirAdmin", (req, res) => {
     conversacion.integrantes[usuarioEnGrupoIdx].admin = true;
     myCache.set(key, conversacion);
 
-    console.log(key);
-    console.log(conversacion);
+    console.log("Nuevo estado de los integrantes:")
+    console.log(conversacion.integrantes);
     res.status(200);
-    res.json(null);
+    res.json(conversacion.integrantes);
   } else {
     res.status(403);
     res.json(null);

@@ -399,7 +399,7 @@ async function eliminarUsuarioDeGrupo(userNumber, groupID) {
 }
 
 async function ascenderAdmin(userNumber, groupID) {
-  const url = `${ORQUESTADOR_URL}/agregarIntegrante`; //54 9 11 6947-5274
+  const url = `${ORQUESTADOR_URL}/convertirAdmin`;
 
   const data = {
     from: numeroTelefono,
