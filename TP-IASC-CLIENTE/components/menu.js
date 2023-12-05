@@ -1,6 +1,9 @@
-import promptSync from "prompt-sync";
-const prompt = promptSync({ sigint: true, output: process.stderr });
-import { chat } from "./chat.js";
+//import promptSync from "prompt-sync";
+//const prompt = promptSync({ sigint: true, output: process.stderr });
+import { chat, imprimirMensajeAjeno, imprimirNotificacion } from "./chat.js";
+import cluster from "cluster";
+
+let chatID = null;
 
 const contactos = ["Maxi Af", "Elo", "Maxi Arr", "Dani"];
 const grupos = ["Grupo de gente crack", "Grupo con Maxi Af"];
@@ -9,8 +12,38 @@ const longitudGrupos = grupos.length;
 const longitudMaxima =
   longitudContactos > longitudGrupos ? longitudContactos : longitudGrupos;
 
+export function initApp(numeroTelefono) {
+  const receptorDeMensajes = cluster.fork({
+    TYPE: "receptorDeMensajes",
+  });
+
+  receptorDeMensajes.on("message", (jsonData) => {
+    if (jsonData.to === chatID) {
+      imprimirMensajeAjeno(jsonData);
+    } else {
+      imprimirNotificacion(jsonData);
+    }
+  });
+
+  menu(numeroTelefono);
+}
+
 export function menu(numeroTelefono) {
   process.stdout.write("\x1bc");
+
+  const lecturaMenu = cluster.fork({
+    TYPE: "lecturaMenu",
+  });
+  lecturaMenu.on("message", (asignarChat) => {
+    chatID = asignarChat;
+    chat(chatID, numeroTelefono);
+  });
+  lecturaMenu.on("exit", (code, signal) => {
+    console.log("exit");
+    //receptorDeMensajes.kill(); TODO: CHECKEAR
+    process.exit();
+  });
+
   console.log(
     "Escribí el código del contacto o grupo con quien desees hablar:"
   );
@@ -33,7 +66,7 @@ export function menu(numeroTelefono) {
     console.log(stringContacto + stringGrupo);
   }
   console.log("\n");
-  const chatID = prompt(">");
-  console.log(chatID);
-  chat(chatID, numeroTelefono);
+
+  /*const chatID = prompt(">");
+  chat(chatID, numeroTelefono);*/
 }

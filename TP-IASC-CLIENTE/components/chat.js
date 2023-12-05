@@ -17,21 +17,17 @@ export async function chat(chatID, numero) {
     TYPE: "envioDeMensajes",
     CONTACT: chatID,
   });
-  const receptorDeMensajes = cluster.fork({
+  envioDeMensajes.on("message", (jsonData) => lecturaConsola(jsonData));
+  /*const receptorDeMensajes = cluster.fork({
     TYPE: "receptorDeMensajes",
   });
-  envioDeMensajes.on("message", (jsonData) =>
-    lecturaConsola(jsonData, envioDeMensajes, receptorDeMensajes)
-  );
   receptorDeMensajes.on("message", (jsonData) => {
-    if(jsonData.to === chatID){
-      imprimirMensajeAjeno(jsonData)
+    if (jsonData.to === chatID) {
+      imprimirMensajeAjeno(jsonData);
     } else {
-      imprimirNotificacion(jsonData)
+      imprimirNotificacion(jsonData);
     }
-    
-  }
-  );
+  });*/
 
   /*
   process.on("SIGINT", function () {
@@ -42,14 +38,14 @@ export async function chat(chatID, numero) {
 
   envioDeMensajes.on("exit", (code, signal) => {
     console.log("exit");
-    receptorDeMensajes.kill();
+    //receptorDeMensajes.kill();
     envioDeMensajes.kill();
     process.exit();
   });
 }
 
 // Si el mensaje que se envía por la consola del chat inicia con alguno de estos comandos iniciales se procesará según el tipo de comando
-async function lecturaConsola(data, envioDeMensajes, receptorDeMensajes) {
+export async function lecturaConsola(data) {
   let message = data.message.match(/^\/\S+\s*/g);
 
   message = message ? message[0].trim() : data.message;
@@ -57,7 +53,6 @@ async function lecturaConsola(data, envioDeMensajes, receptorDeMensajes) {
   switch (message.toLowerCase()) {
     case "/exit":
       //envioDeMensajes.kill();
-      receptorDeMensajes.kill();
       menu(numeroTelefono);
       break;
 
@@ -235,15 +230,19 @@ function imprimirMensajePropio(data) {
   }
 }
 
-function imprimirNotificacion(data) {
-  if(esGrupo(data.to)){
-    console.log(`${espaciado}---RECIBISTE UNA NOTIFICACION EN EL GRUPO ${data.to} ---`);
-  }else{
-    console.log(`${espaciado}---RECIBISTE UNA NOTIFICACION DE ${data.from} ---`);
+export function imprimirNotificacion(data) {
+  if (esGrupo(data.to)) {
+    console.log(
+      `${espaciado}---RECIBISTE UNA NOTIFICACION EN EL GRUPO ${data.to} ---`
+    );
+  } else {
+    console.log(
+      `${espaciado}---RECIBISTE UNA NOTIFICACION DE ${data.from} ---`
+    );
   }
 }
 
-function imprimirMensajeAjeno(data) {
+export function imprimirMensajeAjeno(data) {
   const message = data.message;
   const from = data.from;
   const messagesLines = (message.match(/.{1,54}$|.{1,54} +/g) || []).map((s) =>
@@ -290,17 +289,16 @@ function esGrupo(to) {
   }
 }
 
-
 async function cargarChatsViejos(chatID) {
   var url = `${ORQUESTADOR_URL}/chat?from=${numeroTelefono}&to=${chatID}`; //54 9 11 6947-5274
   var response = await HttpUtils.get(url);
 
-  if(response.status == 401) {
+  if (response.status == 401) {
     console.log(`${espaciado}---NO PERTENECES AL GRUPO ${chatID} ---`);
-    await new Promise(r => setTimeout(r, 3000));
+    await new Promise((r) => setTimeout(r, 3000));
     menu(numeroTelefono);
   }
-  
+
   if (response.status == 404) {
     url = `${ORQUESTADOR_URL}/chatNuevo`;
     const requestBody = {

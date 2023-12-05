@@ -1,4 +1,5 @@
-import { menu } from "./components/menu.js";
+import { initApp } from "./components/menu.js";
+import { lecturaMenu } from "./components/lecturaMenu.js";
 import { envioDeMensajes } from "./components/envioDeMensajes.js";
 import { receptorDeMensajes } from "./components/receptorDeMensajes.js";
 import cluster from "cluster";
@@ -15,9 +16,12 @@ if (cluster.isPrimary) {
 
   await HttpUtils.post("http://localhost:5100/registrarCliente", body);
 
-  menu(numeroTelefono);
+  initApp(numeroTelefono);
 } else {
   switch (process.env.TYPE) {
+    case "lecturaMenu":
+      lecturaMenu();
+      break;
     case "envioDeMensajes":
       envioDeMensajes(numeroTelefono);
       break;
