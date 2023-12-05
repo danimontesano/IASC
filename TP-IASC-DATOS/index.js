@@ -33,6 +33,7 @@ const maxi = {
   grupos: ["g0", "g1", "g2"],
 };
 const grupo0 = {
+  ultimaModificacion: Date.now(),
   integrantes: [
     {
       numero: "54 9 11 3679-2353",
@@ -50,6 +51,7 @@ const grupo0 = {
   chat: [],
 };
 const grupo1 = {
+  ultimaModificacion: Date.now(),
   integrantes: [
     {
       numero: "54 9 11 3679-2353",
@@ -73,6 +75,7 @@ const grupo1 = {
   chat: [],
 };
 const grupo2 = {
+  ultimaModificacion: Date.now(),
   integrantes: [
     {
       numero: "54 9 11 3679-2353",
@@ -122,6 +125,8 @@ app.post("/mensaje", (req, res) => {
   };
 
   conversacion.chat.push(message);
+
+  conversacion.ultimaModificacion = Date.now();
   myCache.set(key, conversacion);
   console.log(key);
   console.log(conversacion);
@@ -145,6 +150,7 @@ app.post("/chatNuevo", (req, res) => {
     conversacion =
       to.charAt(0) == "g"
         ? {
+            ultimaModificacion: Date.now(),
             integrantes: [
               {
                 numero: from,
@@ -155,7 +161,7 @@ app.post("/chatNuevo", (req, res) => {
             ],
             chat: [],
           }
-        : { chat: [] };
+        : { ultimaModificacion: Date.now(), chat: [] };
     myCache.set(key, conversacion);
   }
   console.log(key);
@@ -233,7 +239,9 @@ app.delete("/mensaje", (req, res) => {
   }
 
   if (habilitado) {
-    conversacion.chat[idx].expiry = Date.now();
+    const time = Date.now();
+    conversacion.chat[idx].expiry = time;
+    conversacion.ultimaModificacion = time;
     myCache.set(key, conversacion);
 
     // Replicacion Aqui
@@ -259,6 +267,7 @@ app.put("/mensaje", (req, res) => {
 
   if (message.from == from) {
     conversacion.chat[idx].message = req.body.message;
+    conversacion.ultimaModificacion = Date.now();
     myCache.set(key, conversacion);
 
     // Replicacion Aqui
@@ -297,6 +306,7 @@ app.post("/mensaje/secure", (req, res) => {
   };
 
   conversacion.chat.push(message);
+  conversacion.ultimaModificacion = tiempoCreacion;
   myCache.set(key, conversacion);
   console.log(key);
   console.log(conversacion);
@@ -367,14 +377,17 @@ app.post("/agregarIntegrante", (req, res) => {
   }
 
   if (habilitado) {
+    const time = Date.now();
+
     const integrante = {
       numero: nroIntegrante,
       admin: false,
-      entradaGrupo: Date.now(),
+      entradaGrupo: time,
       salidaGrupo: null,
     };
 
     conversacion.integrantes.push(integrante);
+    conversacion.ultimaModificacion = time;
     myCache.set(key, conversacion);
 
     console.log(key);
@@ -418,6 +431,7 @@ app.delete("/eliminarIntegrante", (req, res) => {
 
   if (habilitado) {
     const integrante = conversacion.integrantes.splice(usuarioEnGrupoIdx, 1);
+    conversacion.ultimaModificacion = Date.now();
     myCache.set(key, conversacion);
 
     console.log(key);
@@ -461,6 +475,7 @@ app.put("/convertirAdmin", (req, res) => {
 
   if (habilitado) {
     conversacion.integrantes[usuarioEnGrupoIdx].admin = true;
+    conversacion.ultimaModificacion = Date.now();
     myCache.set(key, conversacion);
 
     console.log("Nuevo estado de los integrantes:");
@@ -494,11 +509,24 @@ app.post("/cargarMemoriaEntera", (req, res) => {
 app.post("/replicacionOperacion", (req, res) => {
   const key = req.body.key;
   const value = req.body.value;
-  myCache.set(key, value);
+  const oldData = myCache.get(key);
 
-  console.log("Dato replicado: ");
-  console.log(myCache.get(key));
+  if (
+    oldData == undefined ||
+    value?.ultimaModificacion > oldData?.ultimaModificacion
+  ) {
+    myCache.set(key, value);
 
+    console.log("Dato replicado: ");
+    console.log(value);
+  } else if (
+    oldData?.ultimaModificacion == undefined ||
+    value?.ultimaModificacion == undefined
+  ) {
+    console.log("Al replicar uno de los datos no posee ultimaModificacion");
+  } else {
+    console.log("Dato replicado desactualizado");
+  }
   res.status(200);
   res.json(null);
 });

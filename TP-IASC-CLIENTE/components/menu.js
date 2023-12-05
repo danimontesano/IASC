@@ -36,12 +36,15 @@ export function menu(numeroTelefono) {
   });
   lecturaMenu.on("message", (asignarChat) => {
     chatID = asignarChat;
+    lecturaMenu.kill();
     chat(chatID, numeroTelefono);
   });
   lecturaMenu.on("exit", (code, signal) => {
-    console.log("exit");
-    //receptorDeMensajes.kill(); TODO: CHECKEAR
-    process.exit();
+    //console.log("exit");
+    lecturaMenu.kill(); // TODO: CHECKEAR
+    if (code == 130) {
+      process.exit();
+    }
   });
 
   console.log(

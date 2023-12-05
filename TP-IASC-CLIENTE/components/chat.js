@@ -11,13 +11,17 @@ export async function chat(chatID, numero) {
   numeroTelefono = numero;
   lastMessage.from = undefined;
   process.stdout.write("\x1bc");
-  await cargarChatsViejos(chatID);
+  if (!(await cargarChatsViejos(chatID))) {
+    return;
+  }
 
   const envioDeMensajes = cluster.fork({
     TYPE: "envioDeMensajes",
     CONTACT: chatID,
   });
-  envioDeMensajes.on("message", (jsonData) => lecturaConsola(jsonData));
+  envioDeMensajes.on("message", (jsonData) =>
+    lecturaConsola(jsonData, envioDeMensajes)
+  );
   /*const receptorDeMensajes = cluster.fork({
     TYPE: "receptorDeMensajes",
   });
@@ -37,22 +41,20 @@ export async function chat(chatID, numero) {
   });*/
 
   envioDeMensajes.on("exit", (code, signal) => {
-    console.log("exit");
-    //receptorDeMensajes.kill();
-    envioDeMensajes.kill();
-    process.exit();
+    //envioDeMensajes.kill();
+    if (code == 130) process.exit();
   });
 }
 
 // Si el mensaje que se envía por la consola del chat inicia con alguno de estos comandos iniciales se procesará según el tipo de comando
-export async function lecturaConsola(data) {
+export async function lecturaConsola(data, envioDeMensajes) {
   let message = data.message.match(/^\/\S+\s*/g);
 
   message = message ? message[0].trim() : data.message;
 
   switch (message.toLowerCase()) {
     case "/exit":
-      //envioDeMensajes.kill();
+      envioDeMensajes.kill();
       menu(numeroTelefono);
       break;
 
@@ -297,6 +299,7 @@ async function cargarChatsViejos(chatID) {
     console.log(`${espaciado}---NO PERTENECES AL GRUPO ${chatID} ---`);
     await new Promise((r) => setTimeout(r, 3000));
     menu(numeroTelefono);
+    return false;
   }
 
   if (response.status == 404) {
@@ -315,6 +318,7 @@ async function cargarChatsViejos(chatID) {
       ? imprimirMensajePropio(mensaje)
       : imprimirMensajeAjeno(mensaje);
   });
+  return true;
 }
 
 async function enviarMensaje(messageInfo) {

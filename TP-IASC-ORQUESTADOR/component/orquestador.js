@@ -43,9 +43,9 @@ export async function masterNode(port) {
     console.log(req.method);
 
     const server = getServerDatosRandom();
-
+    let response;
     try {
-      const response = await HttpUtils.get(server.url + req.originalUrl);
+      response = await HttpUtils.get(server.url + req.originalUrl);
     } catch (error) {
       res.sendStatus(500);
     }
