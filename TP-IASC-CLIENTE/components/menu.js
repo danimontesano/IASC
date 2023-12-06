@@ -61,14 +61,38 @@ export function menu(numeroTelefono) {
     }
   });
 
+  console.log("Comandos para los chats:");
   console.log(
-    "Escribí el código del contacto o grupo con quien desees hablar:"
+    "                              /exit                                        Salir del chat"
+  );
+  console.log(
+    "                              /delete [Mensaje ID]                         Eliminar un mensaje"
+  );
+  console.log(
+    "                              /edit [Mensaje ID] [Mensaje actualizado]     Salir del chat"
+  );
+  console.log(
+    "                              /secure [Segundos] [Mensaje]                 Enviar un mensaje temporal"
+  );
+  console.log(
+    "                            ┏ /add [Telefono]                              Agregar a un participante al grupo"
+  );
+  console.log(
+    "      comandos de grupos ━━━╋ /expel [Telefono]                            Eliminar a un participante del grupo"
+  );
+  console.log(
+    "                            ┗ /admin [Telefono]                            Ascender a un usuario a admin"
   );
   console.log("");
+  console.log("");
+  console.log("");
+  console.log("¡Hola " + numeroTelefono + "! ✋");
+  console.log("Ingrese el contacto o grupo con quien desees hablar:");
+
+  /*
   console.log(
     "Contactos:                                                            Grupos:"
   );
-
   for (var i = 0; i < longitudMaxima; i++) {
     var stringContacto = "";
     var stringGrupo = "";
@@ -82,7 +106,7 @@ export function menu(numeroTelefono) {
 
     console.log(stringContacto + stringGrupo);
   }
-  console.log("\n");
+  console.log("\n");*/
 
   /*const chatID = prompt(">");
   chat(chatID, numeroTelefono);*/

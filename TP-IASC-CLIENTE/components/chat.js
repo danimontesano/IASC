@@ -317,6 +317,8 @@ async function cargarChatsViejos(chatID) {
     response = await HttpUtils.post(url, requestBody);
   }
 
+  console.log(`ESTAS VIENDO EL CHAT CON ${chatID}`);
+  console.log(`${espaciado}${espaciado}\tID`);
   const responseBody = await response.json();
 
   responseBody.forEach((mensaje) => {
