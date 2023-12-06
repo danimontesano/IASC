@@ -1,7 +1,7 @@
 import { masterNode } from "./component/orquestador.js";
 
-//const port = process.argv[2];
-const port = process.env.PUERTO;
+const port = process.argv[2];
+//const port = process.env.PUERTO;
 
 if (validPort(port)) {
   masterNode(port);

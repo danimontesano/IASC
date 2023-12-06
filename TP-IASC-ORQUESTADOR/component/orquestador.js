@@ -6,7 +6,7 @@ import { Server as httpServer } from "http";
 const http = httpServer(app);
 
 import { Server as socketServer } from "socket.io";
-import { log } from "console";
+
 const ioServer = new socketServer(http, {
   pingTimeout: 5000,
   pingInterval: 1000,

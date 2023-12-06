@@ -17,15 +17,15 @@ import * as HttpUtils from "./utils/utils.js";
 
 app.use(express.json());
 
-//const ip = process.argv[2];
-//const port = process.argv[3];
-//var IP_ORQUESTADOR = process.argv[4];
-//var PUERTO_ORQUESTADOR = process.argv[5];
+const ip = process.argv[2];
+const port = process.argv[3];
+var IP_ORQUESTADOR = process.argv[4];
+var PUERTO_ORQUESTADOR = process.argv[5];
 
-const ip = process.env.IP;
+/*const ip = process.env.IP;
 const port = process.env.PUERTO;
 var IP_ORQUESTADOR = process.env.IP_ORQUESTADOR;
-var PUERTO_ORQUESTADOR = process.env.PUERTO_ORQUESTADOR;
+var PUERTO_ORQUESTADOR = process.env.PUERTO_ORQUESTADOR;*/
 
 const MY_URL = "http://" + ip + ":" + port;
 var DATOS_SLAVES = [];
