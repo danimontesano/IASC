@@ -26,22 +26,22 @@ export async function masterNode(port) {
   });
 
   app.post("/registrarCliente", (req, res) => {
-    console.log(req.body.url);
-    console.log(req.body.nroTelefono);
-
     REGISTRY[req.body.nroTelefono] = req.body.url;
 
     updateRegistry(req.body.nroTelefono, req.body.url);
 
     res.status(200);
     res.json(null);
+    console.log(
+      "Cliente " +
+        req.body.nroTelefono +
+        " conectado. Los clientes actuales son:"
+    );
     console.log(REGISTRY);
   });
 
   app.get("*", async (req, res) => {
-    console.log("original:");
-    console.log(req.originalUrl);
-    console.log(req.method);
+    console.log(req.method + " a " + req.originalUrl);
 
     const server = getServerDatosRandom();
     let response;
@@ -57,9 +57,7 @@ export async function masterNode(port) {
   });
 
   app.post("*", async (req, res) => {
-    console.log("original:");
-    console.log(req.originalUrl);
-    console.log(req.method);
+    console.log(req.method + " a " + req.originalUrl);
 
     try {
       const response = await HttpUtils.post(
@@ -136,9 +134,7 @@ export async function masterNode(port) {
   });
 
   app.put("*", async (req, res) => {
-    console.log("original:");
-    console.log(req.originalUrl);
-    console.log(req.method);
+    console.log(req.method + " a " + req.originalUrl);
 
     const response = await HttpUtils.put(
       DATOS_MASTER.url + req.originalUrl,
@@ -150,9 +146,7 @@ export async function masterNode(port) {
   });
 
   app.delete("*", async (req, res) => {
-    console.log("original:");
-    console.log(req.originalUrl);
-    console.log(req.method);
+    console.log(req.method + " a " + req.originalUrl);
 
     const response = await HttpUtils.del(
       DATOS_MASTER.url + req.originalUrl,
@@ -264,11 +258,14 @@ function esGrupo(to) {
 function getServerDatosRandom() {
   const random = Math.trunc(Math.random() * (DATOS_SLAVES.length + 1));
 
-  console.log("El random es: " + random);
-
   if (random == 0) {
+    console.log("La operacion de lectura se envio al master ");
     return DATOS_MASTER;
   } else {
+    console.log(
+      "La operacion de lectura se envio al slave " +
+        DATOS_SLAVES[random - 1].url
+    );
     return DATOS_SLAVES[random - 1];
   }
 }

@@ -253,6 +253,7 @@ export function imprimirNotificacion(data) {
 export function imprimirMensajeAjeno(data) {
   const message = data.message;
   const from = data.from;
+  const idx = data.idx;
   const messagesLines = (message.match(/.{1,54}$|.{1,54} +/g) || []).map((s) =>
     s.trim()
   );
@@ -264,10 +265,14 @@ export function imprimirMensajeAjeno(data) {
   if (lastMessage?.from == from) {
     if (messagesLines.length == 1) {
       const mensaje = messagesLines[0];
-      console.log(`\t${mensaje}`);
+      const espaciosAdicionales = 112 - mensaje.length;
+
+      console.log(`\t${mensaje}${" ".repeat(espaciosAdicionales)}${idx}`);
     } else {
-      messagesLines.forEach((m) => {
-        console.log(`\t${m}`);
+      messagesLines.forEach((m, index) => {
+        console.log(
+          `\t${m}${index == 0 ? `${" ".repeat(112 - m.length)}${idx}` : ""}`
+        );
       });
     }
   } else {
@@ -275,15 +280,21 @@ export function imprimirMensajeAjeno(data) {
     console.log(`${from}:`);
     if (messagesLines.length == 1) {
       const mensaje = messagesLines[0];
-      console.log(`\t${mensaje}`);
+      const espaciosAdicionales = 112 - mensaje.length;
+
+      console.log(`\t${mensaje}${" ".repeat(espaciosAdicionales)}${idx}`);
     } else {
-      var longestMessage = 0;
+      /*      var longestMessage = 0;
       messagesLines.forEach((m) => {
         longestMessage = m.length > longestMessage ? m.length : longestMessage;
       });
 
-      messagesLines.forEach((m) => {
-        console.log(`\t${m}`);
+      const espaciosAdicionales = 54 - longestMessage;*/
+
+      messagesLines.forEach((m, index) => {
+        console.log(
+          `\t${m}${index == 0 ? `${" ".repeat(112 - m.length)}${idx}` : ""}`
+        );
       });
     }
   }

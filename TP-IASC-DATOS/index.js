@@ -135,7 +135,7 @@ app.post("/mensaje", (req, res) => {
 
   conversacion.ultimaModificacion = Date.now();
   myCache.set(key, conversacion);
-  console.log(key);
+  console.log("Se guarda información en la key: " + key);
   console.log(conversacion);
 
   // Replicacion Aqui
@@ -172,7 +172,7 @@ app.post("/chatNuevo", (req, res) => {
         : { ultimaModificacion: Date.now(), chat: [] };
     myCache.set(key, conversacion);
   }
-  console.log(key);
+  console.log("Se guarda información en la key: " + key);
   console.log(conversacion);
 
   // FILTRADO LOGICO DE CHATS ELIMINADOS
@@ -180,8 +180,6 @@ app.post("/chatNuevo", (req, res) => {
   conversacion.chat = conversacion.chat.filter(
     (message) => message.expiry > tiempoActual
   );
-
-  console.log(conversacion);
 
   // Replicacion Aqui
   replicarResultadoOperacion(key, conversacion);
@@ -214,6 +212,7 @@ app.get("/chat", (req, res) => {
       (message) => !(message.expiry < tiempoActual)
     );
 
+    console.log("Se lee información de la key: " + key);
     console.log(conversacion);
 
     res.status(200);
@@ -230,7 +229,6 @@ app.delete("/mensaje", (req, res) => {
   let habilitado = false;
 
   const key = keyChatPrivado(from, to);
-  console.log(key);
   let conversacion = myCache.get(key);
   const message = conversacion.chat[idx];
 
@@ -250,6 +248,8 @@ app.delete("/mensaje", (req, res) => {
     const time = Date.now();
     conversacion.chat[idx].expiry = time;
     conversacion.ultimaModificacion = time;
+    console.log("Se elimina información de la key: " + key);
+    console.log(conversacion);
     myCache.set(key, conversacion);
 
     // Replicacion Aqui
@@ -294,7 +294,6 @@ app.post("/mensaje/secure", (req, res) => {
   const from = req.body.from;
   const to = req.body.to;
   const timeToLive = req.body.timeToLive;
-  console.log(to);
   const key = keyChatPrivado(from, to);
   const conversacion = myCache.get(key);
 
@@ -316,7 +315,7 @@ app.post("/mensaje/secure", (req, res) => {
   conversacion.chat.push(message);
   conversacion.ultimaModificacion = tiempoCreacion;
   myCache.set(key, conversacion);
-  console.log(key);
+  console.log("Se guarda información en la key: " + key);
   console.log(conversacion);
 
   // Replicacion Aqui
@@ -335,8 +334,6 @@ app.get("/usuario", (req, res) => {
   const from = req.query.from;
 
   const usuario = myCache.get(from);
-  console.log(from);
-  console.log(usuario);
   res.status(200);
   res.json(usuario);
 });
@@ -399,7 +396,7 @@ app.post("/agregarIntegrante", (req, res) => {
     conversacion.ultimaModificacion = time;
     myCache.set(key, conversacion);
 
-    console.log(key);
+    console.log("Se guarda información en la key: " + key);
     console.log(conversacion);
 
     // Replicacion Aqui
@@ -443,7 +440,7 @@ app.delete("/eliminarIntegrante", (req, res) => {
     conversacion.ultimaModificacion = Date.now();
     myCache.set(key, conversacion);
 
-    console.log(key);
+    console.log("Se guarda información en la key: " + key);
     console.log(conversacion);
 
     // Replicacion Aqui
@@ -487,7 +484,7 @@ app.put("/convertirAdmin", (req, res) => {
     conversacion.ultimaModificacion = Date.now();
     myCache.set(key, conversacion);
 
-    console.log("Nuevo estado de los integrantes:");
+    console.log("Nuevo estado de los integrantes del grupo:");
     console.log(conversacion.integrantes);
 
     // Replicacion Aqui
@@ -505,11 +502,13 @@ app.put("/convertirAdmin", (req, res) => {
  *********** REPLICACION DE DATOS ***********/
 
 app.post("/cargarMemoriaEntera", (req, res) => {
+  console.log("Cargando replica de la informacion del master");
   const body = req.body;
   myCache.flushAll();
   myCache.mset(body);
   console.log("------------------Memoria cargada--------------------");
   console.log(myCache.mget(myCache.keys()));
+  console.log("-----------------------------------------------------");
 
   res.status(200);
   res.json(null);
@@ -526,7 +525,7 @@ app.post("/replicacionOperacion", (req, res) => {
   ) {
     myCache.set(key, value);
 
-    console.log("Dato replicado: ");
+    console.log("Se replicó la operación realizada en el master: ");
     console.log(value);
   } else if (
     oldData?.ultimaModificacion == undefined ||
@@ -541,7 +540,7 @@ app.post("/replicacionOperacion", (req, res) => {
 });
 
 http.listen(port, () => {
-  console.log(`process ${process.pid} is listening on port ${port}`);
+  //console.log(`process ${process.pid} is listening on port ${port}`);
 });
 /*
  *****************************
@@ -563,17 +562,19 @@ function keyChatPrivado(from, to) {
 function replicarTodaLaMemoriaEn(url, socket) {
   const data = myCache.mget(myCache.keys());
 
-  console.log("Se envió para replicar la memoria al slave: " + url);
+  console.log("Se envió para replicar la memoria entera al slave: " + url);
   console.log(data);
 
   HttpUtils.post(url + "/cargarMemoriaEntera", transformObjectToList(data))
     .then(() => {
       DATOS_SLAVES.push(url);
-      console.log("Memoria replicada correctamente en el slave: " + url);
+      console.log(
+        "La memoria entera fue replicada correctamente en el slave: " + url
+      );
     })
     .catch(() => {
       socket.emit("REPLICACION-FALLIDA", url);
-      console.log("Error al replicar en el slave: " + url);
+      console.log("Error al replicar la memoria entera en el slave: " + url);
     });
 }
 
@@ -587,8 +588,9 @@ function replicarResultadoOperacion(key, value) {
       key: key,
       value: value,
     };
-    console.log();
-    console.log("Se envia replicar operacion al slave " + urlSlave);
+    console.log(
+      "Se envia a replicar la operacion upsert al slave: " + urlSlave
+    );
     HttpUtils.post(urlSlave + "/replicacionOperacion", message);
   });
 }
@@ -651,6 +653,14 @@ function recepcionHeartbeat(urlOrquestador) {
   });
 }
 
+function esGrupo(to) {
+  if (to) {
+    return to.charAt(0) == "g";
+  } else {
+    return false;
+  }
+}
+
 /*
  *
  * Por ahora no queremos que el datos master envie heartbeats a los slaves. 
@@ -676,11 +686,3 @@ function enviarHeartbeats() {
   });
 }
 */
-
-function esGrupo(to) {
-  if (to) {
-    return to.charAt(0) == "g";
-  } else {
-    return false;
-  }
-}
