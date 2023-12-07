@@ -69,7 +69,7 @@ export function menu(numeroTelefono) {
     "                              /delete [Mensaje ID]                         Eliminar un mensaje"
   );
   console.log(
-    "                              /edit [Mensaje ID] [Mensaje actualizado]     Salir del chat"
+    "                              /edit [Mensaje ID] [Mensaje actualizado]     Editar un mensaje"
   );
   console.log(
     "                              /secure [Segundos] [Mensaje]                 Enviar un mensaje temporal"
